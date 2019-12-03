@@ -85,7 +85,7 @@ class Map extends Phaser.GameObjects.Container {
         this.add(unit);
         this.units.add(unit);
     
-        this.moveUnitTo(unit, 3, 0);
+        this.moveUnitTo(unit, 6, 0);
 
 
         unit = new Unit(this.scene, "rogue", 0);
@@ -129,18 +129,18 @@ class Map extends Phaser.GameObjects.Container {
         unit.x = (x * (unit.getBounds().width)) + unit.getBounds().width / 2;
         unit.y = (y * (unit.getBounds().height)) + unit.getBounds().height / 2;
 
-        unit.face(unit.gridX < x ? 1 : -1);
+        if (unit.gridX != x) {
+            unit.face(unit.gridX < x ? 1 : -1);
+        }
 
         unit.gridX = x;
         unit.gridY = y;
-
-
     }
 
-    createActions(unit) {
-        console.log("createActions -> " + unit.gridX + "x" + unit.gridY);
+    generateActions(unit) {
+        console.log("generateActions -> " + unit.gridX + "x" + unit.gridY);
 
-        var actions = {
+        var actionsList = {
             "peon": [
                 {x:-1, y:0, range:1},
                 {x:1, y:0, range:1},
@@ -191,8 +191,10 @@ class Map extends Phaser.GameObjects.Container {
             ]
         };
 
+        var actions = [];
+
         /* Check movement */
-        actions[unit.unitData.pattern.move].forEach(single_position => {
+        actionsList[unit.unitData.pattern.move].forEach(single_position => {
             for (var r=1; r<=single_position.range; r++) {
                 var isValid = true;
 
@@ -217,26 +219,18 @@ class Map extends Phaser.GameObjects.Container {
                 if (!isValid) {
                     break;
                 }
-                var tile = this.scene.add.sprite(0, 0, "tileset:effectsSmall", 2);
-                tile.anims.play("move");
-                //var tile = new Unit(this.scene, unit.unitData.id);
-                tile.gridX = newX;
-                tile.gridY = newY;
-                            tile.setOrigin(0, 0);
-                            tile.x = (48 * newX);
-                            tile.y = (48 * newY);
-                //tile.create();
-                //this.moveUnitTo(tile, newX, newY);
-                tile.actionType = "move";
-                tile.alpha = 0.3;
 
-                this.add(tile);
-                this.actions.add(tile);
+                actions.push({
+                    "type": "move",
+                    "x": newX,
+                    "y": newY,
+                    "points": 0
+                });
             }
         }, this);
 
         /* Check attack */
-        actions[unit.unitData.pattern.move].forEach(single_position => {
+        actionsList[unit.unitData.pattern.move].forEach(single_position => {
             for (var r=1; r<=single_position.range; r++) {
                 var isValid = true;
 
@@ -257,24 +251,47 @@ class Map extends Phaser.GameObjects.Container {
                 this.units.getChildren().forEach(single_unit => {
                     if (single_unit.gridX == newX && single_unit.gridY == newY) {
                         if (single_unit.player != unit.player) {
-                            var tile = this.scene.add.sprite(0, 0, "tileset:effectsLarge", 10);
-                            tile.anims.play("attack");
-                            tile.actionType = "attack";
-                            //tile.setScale(this.pixelScale);
-                            tile.setOrigin(0, 0);
-                            tile.x = (48 * newX);
-                            tile.y = (48 * newY);
-                            //tile.alpha = 0.5;
-                            tile.gridX = newX;
-                            tile.gridY = newY;
-
-                            this.add(tile);
-                            this.actions.add(tile);
+                            actions.push({
+                                "type": "attack",
+                                "x": newX,
+                                "y": newY,
+                                "points": single_unit.unitData.points
+                            });
                         }
                     }
                 }, this);
             }
         }, this);
+
+        return actions;
+    }
+
+    createActions(unit) {
+        console.log("createActions -> " + unit.gridX + "x" + unit.gridY);
+
+        let actions = this.generateActions(unit);
+
+        actions.forEach(single_action => {
+            var spriteSheet = "tileset:effectsSmall";
+            if (single_action.type == "attack") {
+                spriteSheet = "tileset:effectsLarge";
+            }
+            var tile = this.scene.add.sprite(0, 0, spriteSheet);
+            tile.anims.play(single_action.type);
+
+            tile.gridX = single_action.x;
+            tile.gridY = single_action.y;
+
+            tile.setOrigin(0, 0);
+            tile.x = (48 * single_action.x);
+            tile.y = (48 * single_action.y);
+
+            
+            tile.actionType = single_action.type;
+
+            this.add(tile);
+            this.actions.add(tile);
+        });
     }
 
     clearActions() {

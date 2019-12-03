@@ -11,7 +11,7 @@ class MainScene extends Phaser.Scene {
         this.players = [{
             "ai": -1,
         },{
-            "ai": -1,
+            "ai": 1,
         }];
 
         this.map = new Map(this, 0, 0);
@@ -24,6 +24,30 @@ class MainScene extends Phaser.Scene {
         this.startTurn();
     }
 
+    calculateBestMoves() {
+        // Get all the possible moves
+        let units = this.map.units.getChildren().filter(single_unit => single_unit.player == 1);
+
+        var action = {
+            "type": "idle",
+            "points": -1,
+            "unit": null,
+        }
+
+        units.forEach(single_unit => {
+            let actions = this.map.generateActions(single_unit);
+
+            actions.forEach(single_action => {
+                if (action.points < single_action.points) {
+                    action = single_action;
+                    action.unit = single_unit;
+                }
+            });
+        });
+
+        return action;
+    }
+
     startTurn() {
         console.warn("startTurn : " + (this.players[this.currentPlayer].ai == -1 ? "PLAYER" : "CPU"));
         /* Remove all events */
@@ -34,13 +58,10 @@ class MainScene extends Phaser.Scene {
             console.log("Waiting for player. Enable unit click...");
             this.map.on("unitClicked", this.unitClicked, this);
         } else {
-            /* Pick an unit */
-            let units = this.map.units.getChildren().filter(single_unit => single_unit.player == this.currentPlayer);
-            this.selectUnit(units[0]);
+            let action = this.calculateBestMoves();
 
-            /* Pick an actions */
-            let actions = this.map.actions.getChildren();
-            this.selectAction(actions[0], actions[0].gridX, actions[0].gridY);
+            this.selectUnit(action.unit);
+            this.selectAction(action.type, action.x, action.y);
         }
     }
 
@@ -68,8 +89,9 @@ class MainScene extends Phaser.Scene {
     disableUnit(unit) {
         if (unit != null) {
             unit.deactivate();
-            this.currentUnit = unit;
         }
+
+        this.currentUnit = null;
 
         /* Always clear actions (and events) */
         this.map.off("actionClicked", this.selectAction, this);
@@ -78,12 +100,12 @@ class MainScene extends Phaser.Scene {
 
     /* Events */
  
+    /* @TODO Do something different when we select the other player unit */
     unitClicked(unit, x, y) {
         console.log("unitClicked");
 
         if (unit == this.currentUnit) {
             this.disableUnit(this.currentUnit);
-            this.startTurn();
         } else {
             this.disableUnit(this.currentUnit);
             this.selectUnit(unit);

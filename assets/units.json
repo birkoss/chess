@@ -4,26 +4,30 @@
 	"pattern": {
 		"move": "peon",
 		"attack": "peon"
-	}
+	},
+	"points": 10
 },{
 	"id": "rogue",
 	"frames": [1, 19],
 	"pattern": {
 		"move": "fool",
 		"attack": "fool"
-	}
+	},
+	"points": 30
 },{
 	"id": "archer",
 	"frames": [2, 20],
 	"pattern": {
 		"move": "king",
 		"attack": "king"
-	}
+	},
+	"points": 50
 },{
 	"id": "skeleton",
 	"frames": [290, 308],
 	"pattern": {
 		"move": "king",
 		"attack": "king"
-	}
+	},
+	"points": 10
 }]
