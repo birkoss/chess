@@ -1,0 +1,29 @@
+[{
+	"id": "knight",
+	"frames": [0, 18],
+	"pattern": {
+		"move": "peon",
+		"attack": "peon"
+	}
+},{
+	"id": "rogue",
+	"frames": [1, 19],
+	"pattern": {
+		"move": "fool",
+		"attack": "fool"
+	}
+},{
+	"id": "archer",
+	"frames": [2, 20],
+	"pattern": {
+		"move": "king",
+		"attack": "king"
+	}
+},{
+	"id": "skeleton",
+	"frames": [290, 308],
+	"pattern": {
+		"move": "king",
+		"attack": "king"
+	}
+}]
