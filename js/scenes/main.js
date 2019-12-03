@@ -8,66 +8,90 @@ class MainScene extends Phaser.Scene {
     }
 
     create() {
+        this.players = [{
+            "ai": -1,
+        },{
+            "ai": -1,
+        }];
+
         this.map = new Map(this, 0, 0);
         this.map.create();
 
         this.map.x = (this.sys.game.canvas.width - this.map.getBounds().width) / 2;
         this.map.y = this.map.x;
 
+        this.currentPlayer = 0;
         this.startTurn();
     }
 
     startTurn() {
-        this.map.off("actionClicked", this.actionClicked, this);
-        this.map.on("unitClicked", this.unitClicked, this);
+        console.warn("startTurn : " + (this.players[this.currentPlayer].ai == -1 ? "PLAYER" : "CPU"));
+        /* Remove all events */
+        this.map.off("actionClicked", this.selectAction, this);
+        this.map.off("unitClicked", this.unitClicked, this);
+
+        if (this.players[this.currentPlayer].ai == -1) {
+            console.log("Waiting for player. Enable unit click...");
+            this.map.on("unitClicked", this.unitClicked, this);
+        } else {
+            /* Pick an unit */
+            let units = this.map.units.getChildren().filter(single_unit => single_unit.player == this.currentPlayer);
+            this.selectUnit(units[0]);
+
+            /* Pick an actions */
+            let actions = this.map.actions.getChildren();
+            this.selectAction(actions[0], actions[0].gridX, actions[0].gridY);
+        }
     }
 
-    enableUnit(unit) {
+    endTurn() {
+        console.log("endTurn");
+        this.currentPlayer++;
+        if (this.currentPlayer >= this.players.length) {
+            this.currentPlayer = 0;
+        }
+
+        this.startTurn();
+    }
+
+    selectUnit(unit) {
         console.log("enableUnit");
-        console.log(unit);
 
         this.currentUnit = unit;
 
         this.currentUnit.activate();
 
         this.map.createActions(unit);
-        this.map.on("unitClicked", this.unitClicked, this);
-        this.map.on("actionClicked", this.actionClicked, this);
+        this.map.on("actionClicked", this.selectAction, this);
     }
 
     disableUnit(unit) {
-        this.map.off("actionClicked", this.actionClicked, this);
-
-        console.log("disableUnit");
-        console.log(unit);
         if (unit != null) {
             unit.deactivate();
-
-            this.currentUnit = null;
+            this.currentUnit = unit;
         }
-        this.map.clearActions();
 
-        //this.map.on("unitClicked", this.unitClicked, this);
+        /* Always clear actions (and events) */
+        this.map.off("actionClicked", this.selectAction, this);
+        this.map.clearActions();
     }
 
     /* Events */
  
     unitClicked(unit, x, y) {
         console.log("unitClicked");
-        this.map.off("unitClicked", this.unitClicked, this);
 
         if (unit == this.currentUnit) {
             this.disableUnit(this.currentUnit);
             this.startTurn();
         } else {
             this.disableUnit(this.currentUnit);
-            this.enableUnit(unit);
+            this.selectUnit(unit);
         }
     }
 
-    actionClicked(action, x, y) {
-        console.log("actionClicked");
-        console.log(x, y);
+    selectAction(action, x, y) {
+        console.log("selectAction");
 
         if (action.actionType == "move") {
             this.map.moveUnitTo(this.currentUnit, x, y);            
@@ -77,7 +101,8 @@ class MainScene extends Phaser.Scene {
         }
 
         this.disableUnit(this.currentUnit);
-        this.startTurn();
+        
+        this.endTurn();
     }
 
 

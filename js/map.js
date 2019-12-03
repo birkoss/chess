@@ -27,6 +27,13 @@ class Map extends Phaser.GameObjects.Container {
             repeat: -1
         });
 
+        this.scene.anims.create({
+            key: "move",
+            frames:this.scene.anims.generateFrameNumbers('tileset:effectsSmall', { frames: [2, 3, 4, 3] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
         this.createTiles();
         this.createUnits();
 
@@ -71,24 +78,26 @@ class Map extends Phaser.GameObjects.Container {
     createUnits() {
         this.units = this.scene.add.group();
 
-        let unit = new Unit(this.scene, "knight")
+        let unit = new Unit(this.scene, "knight", 0);
         unit.create();
+        unit.face(1);
 
         this.add(unit);
         this.units.add(unit);
     
         this.moveUnitTo(unit, 3, 0);
 
-        unit = new Unit(this.scene, "rogue")
+
+        unit = new Unit(this.scene, "rogue", 0);
         unit.create();
+        unit.face(1);
 
         this.add(unit);
         this.units.add(unit);
     
         this.moveUnitTo(unit, 0, 3);
 
-
-        unit = new Unit(this.scene, "archer");
+        unit = new Unit(this.scene, "archer", 0);
         unit.create();
         unit.face(1);
         this.add(unit);
@@ -96,19 +105,21 @@ class Map extends Phaser.GameObjects.Container {
     
         this.moveUnitTo(unit, 0, 2);
 
-        unit = new Unit(this.scene, "skeleton")
-        unit.create();
+        for (var i=0; i<5; i++) {
+            unit = new Unit(this.scene, "skeleton", 1)
+            unit.create();
 
-        this.add(unit);
-        this.units.add(unit);
-    
-        this.moveUnitTo(unit, 6, 4);
+            this.add(unit);
+            this.units.add(unit);
+        
+            this.moveUnitTo(unit, 7, i);
+        }
+        
     }
 
     deleteUnitAt(x, y) {
         this.units.getChildren().forEach(single_unit => {
             if (single_unit.gridX == x && single_unit.gridY == y) {
-                console.log(single_unit);
                 single_unit.destroy(true);
             }
         }, this);
@@ -206,14 +217,16 @@ class Map extends Phaser.GameObjects.Container {
                 if (!isValid) {
                     break;
                 }
-
-                console.log(unit.unitData.id);
-
-                var tile = new Unit(this.scene, unit.unitData.id);
-                tile.gridX = unit.gridX;
-                tile.gridY = unit.gridY;
-                tile.create();
-                this.moveUnitTo(tile, newX, newY);
+                var tile = this.scene.add.sprite(0, 0, "tileset:effectsSmall", 2);
+                tile.anims.play("move");
+                //var tile = new Unit(this.scene, unit.unitData.id);
+                tile.gridX = newX;
+                tile.gridY = newY;
+                            tile.setOrigin(0, 0);
+                            tile.x = (48 * newX);
+                            tile.y = (48 * newY);
+                //tile.create();
+                //this.moveUnitTo(tile, newX, newY);
                 tile.actionType = "move";
                 tile.alpha = 0.3;
 
@@ -243,19 +256,21 @@ class Map extends Phaser.GameObjects.Container {
                 /* Check if a unit is present */
                 this.units.getChildren().forEach(single_unit => {
                     if (single_unit.gridX == newX && single_unit.gridY == newY) {
-                        var tile = this.scene.add.sprite(0, 0, "tileset:effectsLarge", 10);
-                        tile.anims.play("attack");
-                        tile.actionType = "attack";
-                        //tile.setScale(this.pixelScale);
-                        tile.setOrigin(0, 0);
-                        tile.x = (48 * newX);
-                        tile.y = (48 * newY);
-                        //tile.alpha = 0.5;
-                        tile.gridX = newX;
-                        tile.gridY = newY;
+                        if (single_unit.player != unit.player) {
+                            var tile = this.scene.add.sprite(0, 0, "tileset:effectsLarge", 10);
+                            tile.anims.play("attack");
+                            tile.actionType = "attack";
+                            //tile.setScale(this.pixelScale);
+                            tile.setOrigin(0, 0);
+                            tile.x = (48 * newX);
+                            tile.y = (48 * newY);
+                            //tile.alpha = 0.5;
+                            tile.gridX = newX;
+                            tile.gridY = newY;
 
-                        this.add(tile);
-                        this.actions.add(tile);
+                            this.add(tile);
+                            this.actions.add(tile);
+                        }
                     }
                 }, this);
             }
@@ -263,9 +278,7 @@ class Map extends Phaser.GameObjects.Container {
     }
 
     clearActions() {
-        console.log("Position: " + this.actions.getChildren().length);
         this.actions.clear(true, true);
-        console.log("After: " + this.actions.getChildren().length);
     }
 
     /* Events */
@@ -283,20 +296,38 @@ class Map extends Phaser.GameObjects.Container {
 
         //console.log("backgroundClicked -> " + gridX + "x" + gridY + " | actions: " + this.actions.getChildren().length);
 
+        var custom_event = {
+            "name": "",
+            "target": null,
+            "x": -1,
+            "y": -1
+        };
+
         this.actions.getChildren().forEach(single_action => {
             if (single_action.gridX == gridX && single_action.gridY == gridY) {
-                this.emit('actionClicked', single_action, gridX, gridY);
-                return;
+                if (custom_event.name == "") {
+                    custom_event.name = "actionClicked";
+                    custom_event.target = single_action;
+                    custom_event.x = gridX;
+                    custom_event.y = gridY;
+                }
             }
         }, this);
 
         this.units.getChildren().forEach(single_unit => {
-            console.log(gridX+"x"+gridY + " == " + single_unit.gridX + "x" + single_unit.gridY);
             if (single_unit.gridX == gridX && single_unit.gridY == gridY) {
-                this.emit('unitClicked', single_unit, gridX, gridY);
-                return;
+                if (custom_event.name == "") {
+                    custom_event.name = "unitClicked";
+                    custom_event.target = single_unit;
+                    custom_event.x = gridX;
+                    custom_event.y = gridY;
+                }
             }
         }, this);
+
+        if (custom_event.name != "") {
+            this.emit(custom_event.name, custom_event.target, custom_event.x, custom_event.y);
+        }
     }
 
 

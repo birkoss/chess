@@ -1,11 +1,12 @@
 class Unit extends Phaser.GameObjects.Container {
 
-    constructor(scene, unitId) {
+    constructor(scene, unitId, player) {
         super(scene, 0, 0);
         scene.add.existing(this);
 
         this.pixelScale = 2;
         this.unitId = unitId;
+        this.player = player;
     }
 
     create() {
@@ -33,13 +34,14 @@ class Unit extends Phaser.GameObjects.Container {
     }
 
     face(newDirection) {
+        console.log("Face: " + this.direction + " VS " + newDirection);
         if (newDirection == this.direction) {
             return;
         }
 
         this.direction = newDirection;
-        
-        this.scaleX = (this.direction * -1);
+        console.log(this.scaleX);
+        this.scaleX = (this.direction == -1 ? 1 : -1);
     }
 
     deactivate() {
